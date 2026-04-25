@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-import openai
+from openai import OpenAI, OpenAIError
 from flask import Flask
 from threading import Thread
 import os
@@ -21,12 +21,15 @@ def keep_alive():
 # Загрузка токенов из переменных окружения Replit
 DISCORD_TOKEN = os.environ['DISCORD_TOKEN']
 OPENAI_API_KEY = os.environ['OPENAI_API_KEY']
-OPENAI_ORG_ID = os.environ['OPENAI_ORG_ID']
+OPENAI_ORG_ID = os.environ.get('OPENAI_ORG_ID')
+
+# Инициализируем клиент один раз при запуске
+openai_client = OpenAI(api_key=OPENAI_API_KEY, organization=OPENAI_ORG_ID)
 
 intents = discord.Intents.all()
 
 # Устанавливаем префиксы
-prefixes = ['/']  # Пример, можно изменить префикс бота
+prefixes = ['!gpt ']  # Используем !gpt вместо '/' — команда // некорректна
 
 bot = commands.Bot(command_prefix=prefixes, intents=intents)
 
@@ -34,20 +37,22 @@ bot = commands.Bot(command_prefix=prefixes, intents=intents)
 async def on_ready():
     print('Спящий пробудился')
 
-@bot.command(name='/')
+@bot.command(name='ask')
 async def gpt_command(ctx: commands.Context, *, args):
-    openai.api_key = OPENAI_API_KEY
-    openai.organization = OPENAI_ORG_ID
-
-    response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
-        messages=[
-            {"role": "system", "content": "You are a helpful assistant."},
-            {"role": "user", "content": args}
-        ]
-    )
-
-    await ctx.send(embed=discord.Embed(description=response['choices'][0]['message']['content']))
+    try:
+        response = openai_client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant."},
+                {"role": "user", "content": args}
+            ]
+        )
+        reply = response.choices[0].message.content
+        await ctx.send(embed=discord.Embed(description=reply))
+    except OpenAIError as e:
+        await ctx.send(f"Ошибка API: {e}")
+    except Exception as e:
+        await ctx.send("Произошла ошибка при обработке запроса.")
 
 # Запуск бота
 keep_alive()

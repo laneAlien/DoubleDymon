@@ -1,11 +1,11 @@
 [tool.poetry]
-name = "python-template"
+name = "doubledymon"
 version = "0.1.0"
-description = ""
-authors = ["Your Name <you@example.com>"]
+description = "Discord bot with OpenAI GPT integration"
+authors = ["laneAlien"]
 
 [tool.poetry.dependencies]
-python = ">=3.10.0,<3.11"
+python = ">=3.10"
 flask = "^3.0.1"
 openai = "^1.10.0"
 discord-py = "^2.3.2"
